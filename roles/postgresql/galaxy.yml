@@ -1,0 +1,20 @@
+namespace: community
+name: postgresql
+version: 2.3.2
+readme: README.md
+authors:
+  - Ansible PostgreSQL community
+description: null
+license_file: COPYING
+tags:
+  - database
+  - postgres
+  - postgresql
+repository: https://github.com/ansible-collections/community.postgresql
+documentation: https://docs.ansible.com/ansible/latest/collections/community/postgresql
+homepage: https://github.com/ansible-collections/community.postgresql
+issues: https://github.com/ansible-collections/community.postgresql/issues
+build_ignore:
+  - .gitignore
+  - changelogs/.plugin-cache.yaml
+  - '*.tar.gz'
