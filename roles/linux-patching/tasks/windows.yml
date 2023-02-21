@@ -1,0 +1,40 @@
+---
+- name: Searching for updates
+  win_updates:
+    state: searched
+    server_selection: "{{ windows_updates_source }}"
+    blacklist: package_manager_excluded_packages
+  register: foundUpdates
+  retries: 4 # Windows can fail from time to time
+  until: not foundUpdates.failed
+  when: windows_category_names is not defined
+
+- name: Showing the found updates
+  debug:
+    var: foundUpdates
+
+- name: Installing this categorries
+  debug:
+    msg: "{{ foundUpdates.updates | dict2items | map(attribute='value.categories') | list |  sum(start=startingCategoryUpdates) | unique }}"
+  when: windows_category_names is not defined
+
+- name: Downloads Windows updates and installs them
+  win_updates:
+    reboot: "{{server_reboot_allowed}}"
+    server_selection: "{{ windows_updates_source }}"
+    reboot_timeout: '{{ server_timeout_seconds_value }}'
+    state: installed
+    category_names:
+      - "{{ windows_category_names | default(foundUpdates.updates | dict2items | 
+          map(attribute='value.categories') | list | sum(start=startingCategoryUpdates) | unique) }}"
+    blacklist: package_manager_excluded_packages
+  register: winUpdateResult
+
+- name: Force the reboot of the server (if not restarted during the update installation)
+  reboot:
+  when: server_reboot_allowed and force_reboot and winUpdateResult and foundUpdates.reboot_required is defined and not foundUpdates.reboot_required
+
+- name: Pausing after rebooting
+  pause:
+    seconds: "{{ server_post_reboot_delay }}"
+  when: server_post_reboot_delay |int > 0

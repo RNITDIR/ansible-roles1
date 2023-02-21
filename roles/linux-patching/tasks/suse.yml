@@ -1,0 +1,3 @@
+---
+- name: SUSE OS not implemented
+  fail: msg="OS not implemented!"

@@ -1,0 +1,41 @@
+---
+- name: Patching RHEL >= 8
+  block:
+    - name: Ensuring needed packages are installed (RHEL >= 8)
+      dnf:
+        name: "{{ package_manager_needed_packages }}"
+        state: present
+
+    - name: Upgrading the system (RHEL >= 8)
+      dnf:
+        name: "*"
+        state: latest
+        update_cache: yes
+        exclude: "{{ package_manager_excluded_packages }}"
+  when: ansible_facts['distribution_major_version']|int >= 8
+
+- name: Patching RHEL < 8
+  block:
+    - name: Ensuring needed packages are installed (RHEL <= 7)
+      yum:
+        name: "{{ package_manager_needed_packages }}"
+        state: present
+
+    - name: Upgrading the system (RHEL <= 7)
+      yum:
+        name: "*"
+        state: latest
+        update_cache: yes
+        exclude: "{{ package_manager_excluded_packages }}"
+  when: ansible_facts['distribution_major_version']|int < 8
+
+- name: Check if reboot is required (probably due to a kernel update)
+  shell: set -o pipefail && LAST_KERNEL=$(rpm -q --last kernel | awk 'NR==1{sub(/kernel-/,""); print $1}');
+            CURRENT_KERNEL=$(uname -r); if [ $LAST_KERNEL != $CURRENT_KERNEL ]; then echo 'reboot'; else echo 'no'; fi
+  changed_when: "need_reboot_query.stdout == 'reboot'"
+  register: need_reboot_query
+  when: server_reboot_allowed|bool
+
+- name: setting fast for rebooting
+  set_fact: needs_reboot=True
+  when: need_reboot_query is defined and need_reboot_query.stdout == 'reboot'
